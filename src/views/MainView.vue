@@ -38,6 +38,24 @@ interface WorkspaceInfo {
 const useFixedWidth = ref(true)
 const isLoadingConfig = ref(true)
 const contentBodyRef = ref<{ $el: HTMLElement } | null>(null)
+const isAnimating = ref(false)
+const animatedWidth = ref<number | null>(null)
+
+// 内容区域样式
+const contentBodyStyle = computed(() => {
+  if (isAnimating.value && animatedWidth.value !== null) {
+    return {
+      width: `${animatedWidth.value}px`,
+      maxWidth: 'none',
+      margin: '0 auto'
+    }
+  }
+  return {
+    width: '',
+    maxWidth: useFixedWidth.value ? '1280px' : '100%',
+    margin: useFixedWidth.value ? '0 auto' : '0'
+  }
+})
 
 // 页面加载时读取配置
 onMounted(async () => {
@@ -53,7 +71,6 @@ onMounted(async () => {
 
 // 切换版心设置
 async function toggleFixedWidth(value: boolean) {
-  // 获取组件的根 DOM 元素
   const el = contentBodyRef.value?.$el as HTMLElement | undefined
   if (!el) {
     useFixedWidth.value = value
@@ -61,35 +78,28 @@ async function toggleFixedWidth(value: boolean) {
     return
   }
 
-  // 获取当前实际宽度
+  // 获取当前和目标宽度
   const currentWidth = el.getBoundingClientRect().width
   const parentWidth = el.parentElement?.clientWidth || window.innerWidth
-
-  // 固定当前宽度，防止动画期间变化
-  el.style.width = currentWidth + 'px'
-  el.style.maxWidth = 'none'
-
-  // 计算目标宽度
   const targetWidth = value ? Math.min(1280, parentWidth) : parentWidth
 
-  // 使用 Anime.js 动画 width
-  animate(el, {
-    width: targetWidth,
+  // 开始动画
+  isAnimating.value = true
+  animatedWidth.value = currentWidth
+
+  // 使用 Anime.js 动画
+  animate(animatedWidth, {
+    value: targetWidth,
     duration: 350,
     ease: 'outCubic',
+    onUpdate: () => {
+      // 强制触发响应式更新
+      animatedWidth.value = animatedWidth.value
+    },
     onComplete: () => {
-      // 强制重排确保样式稳定
-      void el.offsetHeight
-
-      // 更新状态（CSS 类接管）
+      isAnimating.value = false
+      animatedWidth.value = null
       useFixedWidth.value = value
-
-      // 再次强制重排
-      void el.offsetHeight
-
-      // 清除内联样式，让 CSS 类完全控制
-      el.style.width = ''
-      el.style.maxWidth = ''
     }
   })
 
@@ -222,7 +232,8 @@ async function handleDropdownSelect(key: string) {
       <!-- 内容区域 -->
       <NLayoutContent
         ref="contentBodyRef"
-        :class="['content-body', useFixedWidth ? 'content-fixed-width' : 'content-fluid']"
+        class="content-body"
+        :style="contentBodyStyle"
       >
         <div class="content-inner">
             <NTabs v-model:value="activeTab" type="line" animated>
