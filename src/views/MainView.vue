@@ -10,23 +10,31 @@ import {
   NLayout,
   NLayoutHeader,
   NLayoutContent,
+  NLayoutSider,
   NMenu,
   NIcon,
   NDropdown,
   NTabs,
   NTabPane,
   NSwitch,
-  useMessage
+  useMessage,
+  NEmpty
 } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
 import {
   FolderOpen,
   LayoutDashboard,
   Clock,
-  Settings
+  Settings,
+  List
 } from 'lucide-vue-next'
 import FileTree from '@/components/FileTree.vue'
+import TaskSidebar from '@/components/TaskSidebar.vue'
+import TaskDetail from '@/components/TaskDetail.vue'
+import { useTaskStore } from '@/stores/taskStore'
+import type { Task } from '@/types/task'
 
+const taskStore = useTaskStore()
 const activeTab = ref('overview')
 
 interface WorkspaceInfo {
@@ -131,6 +139,11 @@ const menuOptions: MenuOption[] = [
     label: '概览',
     key: 'dashboard',
     icon: () => h(NIcon, null, { default: () => h(LayoutDashboard) })
+  },
+  {
+    label: '任务',
+    key: 'tasks',
+    icon: () => h(NIcon, null, { default: () => h(List) })
   }
 ]
 
@@ -175,6 +188,34 @@ async function handleDropdownSelect(key: string) {
   if (key === 'exit-workspace') {
     await window.electronAPI.exitToSetup()
   }
+}
+
+// 任务相关处理
+const showAddTaskModal = ref(false)
+
+function handleAddTask() {
+  showAddTaskModal.value = true
+}
+
+function handleTaskUpdate(updatedTask: Task) {
+  // 任务更新处理
+  console.log('Task updated:', updatedTask)
+}
+
+function handleRunTask() {
+  console.log('Run task')
+}
+
+function handleStopTask() {
+  console.log('Stop task')
+}
+
+function handleGenerateBrainstorming() {
+  console.log('Generate brainstorming')
+}
+
+function handleGeneratePlan() {
+  console.log('Generate plan')
 }
 </script>
 
@@ -315,6 +356,38 @@ async function handleDropdownSelect(key: string) {
                 <NCard title="工作目录文件结构" class="files-card">
                   <FileTree v-if="workspaceInfo?.path" :path="workspaceInfo.path" />
                 </NCard>
+              </NTabPane>
+
+              <!-- 任务标签页 -->
+              <NTabPane name="tasks" tab="任务">
+                <template #tab>
+                  <span class="tab-label">
+                    <List :size="16" />
+                    任务
+                  </span>
+                </template>
+
+                <div class="tasks-container">
+                  <TaskSidebar
+                    :tasks="taskStore.taskList"
+                    v-model="taskStore.currentTaskId"
+                    @add-task="handleAddTask"
+                  />
+                  <div class="task-content">
+                    <TaskDetail
+                      v-if="taskStore.currentTask"
+                      :task="taskStore.currentTask"
+                      @update="handleTaskUpdate"
+                      @run="handleRunTask"
+                      @stop="handleStopTask"
+                      @generate-brainstorming="handleGenerateBrainstorming"
+                      @generate-plan="handleGeneratePlan"
+                    />
+                    <div v-else class="empty-state">
+                      <n-empty description="选择一个任务开始" />
+                    </div>
+                  </div>
+                </div>
               </NTabPane>
             </NTabs>
           </div>
@@ -551,6 +624,31 @@ async function handleDropdownSelect(key: string) {
 .files-card :deep(.n-card-header) {
   font-size: 16px;
   font-weight: 500;
+}
+
+/* 任务相关样式 */
+.tasks-container {
+  display: flex;
+  height: calc(100vh - 200px);
+  min-height: 400px;
+}
+
+.task-content {
+  flex: 1;
+  overflow: auto;
+}
+
+.tasks-container .task-sidebar {
+  width: 280px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 
 /* 响应式 */
