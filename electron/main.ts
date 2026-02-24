@@ -25,9 +25,23 @@ interface StoredWorkspace extends WorkspaceInfo {
   lastOpenedAt: string
 }
 
+// 布局配置
+interface LayoutConfig {
+  useFixedWidth: boolean
+}
+
 // 初始化 electron-store
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const store = new Store<any>()
+const store = new Store<{
+  workspace: { name: string; path: string; lastOpenedAt: string } | null
+  layoutConfig: LayoutConfig
+}>({
+  defaults: {
+    workspace: null,
+    layoutConfig: {
+      useFixedWidth: true  // 默认启用版心
+    }
+  }
+})
 
 // 创建 Setup 窗口
 function createSetupWindow() {
@@ -263,6 +277,17 @@ function setupIPC() {
       const message = error instanceof Error ? error.message : '读取目录失败'
       return { success: false, error: message }
     }
+  })
+
+  // 获取布局配置
+  ipcMain.handle('get-layout-config', () => {
+    return store.get('layoutConfig')
+  })
+
+  // 设置布局配置
+  ipcMain.handle('set-layout-config', (_, config: Partial<LayoutConfig>) => {
+    const current = store.get('layoutConfig')
+    store.set('layoutConfig', { ...current, ...config })
   })
 }
 
