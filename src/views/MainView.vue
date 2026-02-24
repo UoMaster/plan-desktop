@@ -463,6 +463,9 @@ function handleGeneratePlan() {
 
 .content-inner {
   max-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 欢迎卡片 */
@@ -603,8 +606,8 @@ function handleGeneratePlan() {
 /* 任务相关样式 */
 .tasks-container {
   display: flex;
-  height: calc(100vh - 200px);
-  min-height: 400px;
+  height: 100%;
+  min-height: 0;
 }
 
 .task-content {
@@ -616,6 +619,13 @@ function handleGeneratePlan() {
   width: 280px;
   border-right: 1px solid var(--color-border);
   background: var(--color-bg-elevated);
+  display: flex;
+  flex-direction: column;
+}
+
+.tasks-container .task-sidebar .task-list {
+  flex: 1;
+  overflow: auto;
 }
 
 .empty-state {
