@@ -42,21 +42,6 @@ interface LayoutConfig {
   useFixedWidth: boolean
 }
 
-// Anime.js 类型声明
-declare module 'animejs' {
-  interface AnimeParams {
-    targets?: unknown
-    duration?: number
-    delay?: number
-    easing?: string
-    complete?: () => void
-    update?: () => void
-    [key: string]: unknown
-  }
-
-  function anime(params: AnimeParams): unknown
-  export default anime
-}
 
 declare global {
   interface Window {

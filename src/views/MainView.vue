@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, h } from 'vue'
 import { useRoute } from 'vue-router'
-import anime from 'animejs'
+import { animate } from 'animejs'
 import {
   NButton,
   NCard,
@@ -76,14 +76,13 @@ async function toggleFixedWidth(value: boolean) {
   el.style.paddingRight = currentPadding + 'px'
 
   // 使用 Anime.js 动画
-  anime({
-    targets: el,
+  animate(el, {
     maxWidth: targetMaxWidth,
     paddingLeft: targetPadding,
     paddingRight: targetPadding,
     duration: 400,
-    easing: 'cubicBezier(0.4, 0.0, 0.2, 1)',
-    complete: () => {
+    ease: 'cubicBezier(0.4, 0.0, 0.2, 1)',
+    onComplete: () => {
       // 动画完成后更新状态，让 CSS 类接管
       useFixedWidth.value = value
       // 清除内联样式
