@@ -61,36 +61,30 @@ async function toggleFixedWidth(value: boolean) {
     return
   }
 
-  // 获取当前计算样式
-  const computedStyle = window.getComputedStyle(el)
-  const currentMaxWidth = parseInt(computedStyle.maxWidth) || el.clientWidth
-  const currentPadding = parseInt(computedStyle.paddingLeft) || 24
+  // 获取当前实际宽度
+  const rect = el.getBoundingClientRect()
+  const currentWidth = rect.width
 
-  // 目标值
-  const targetMaxWidth = value ? 1280 : el.parentElement?.clientWidth || window.innerWidth
-  const targetPadding = 24 // var(--space-5) = 24px
+  // 目标宽度
+  const targetWidth = value ? Math.min(1280, el.parentElement?.clientWidth || window.innerWidth) : (el.parentElement?.clientWidth || window.innerWidth)
 
-  // 先设置初始值
-  el.style.maxWidth = currentMaxWidth + 'px'
-  el.style.margin = value ? '0' : '0 auto'
-  el.style.paddingLeft = currentPadding + 'px'
-  el.style.paddingRight = currentPadding + 'px'
+  // 先固定当前宽度，移除 CSS 类的控制
+  el.style.width = currentWidth + 'px'
+  el.style.maxWidth = 'none'
+  el.style.margin = '0 auto'
 
-  // 使用 Anime.js 动画
+  // 使用 Anime.js 动画 - 只动画 width，保持居中
   animate(el, {
-    maxWidth: targetMaxWidth,
-    paddingLeft: targetPadding,
-    paddingRight: targetPadding,
-    duration: 400,
+    width: targetWidth,
+    duration: 350,
     ease: 'cubicBezier(0.4, 0.0, 0.2, 1)',
     onComplete: () => {
       // 动画完成后更新状态，让 CSS 类接管
       useFixedWidth.value = value
       // 清除内联样式
+      el.style.width = ''
       el.style.maxWidth = ''
       el.style.margin = ''
-      el.style.paddingLeft = ''
-      el.style.paddingRight = ''
     }
   })
 
