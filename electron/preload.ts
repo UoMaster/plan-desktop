@@ -34,6 +34,11 @@ interface GetDirectoryStructureResult {
   error?: string
 }
 
+// 布局配置
+interface LayoutConfig {
+  useFixedWidth: boolean
+}
+
 contextBridge.exposeInMainWorld('electronAPI', {
   // 选择目录
   selectDirectory: (): Promise<SelectDirectoryResult> =>
@@ -66,8 +71,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 保留原有 API 供扩展使用
   sendMessage: (message: string) => ipcRenderer.send('message', message),
   onMessage: (callback: (message: string) => void) => {
-    ipcRenderer.on('message', (_, message) => callback(message))
-  }
+    ipcRenderer.on('message', (_event: unknown, message: string) => callback(message))
+  },
+
+  // 布局配置
+  getLayoutConfig: (): Promise<LayoutConfig> =>
+    ipcRenderer.invoke('get-layout-config'),
+  setLayoutConfig: (config: Partial<LayoutConfig>): Promise<void> =>
+    ipcRenderer.invoke('set-layout-config', config)
 })
 
 declare global {
@@ -82,6 +93,12 @@ declare global {
       getDirectoryStructure: (path: string) => Promise<GetDirectoryStructureResult>
       sendMessage: (message: string) => void
       onMessage: (callback: (message: string) => void) => void
+
+      // 布局配置
+      getLayoutConfig: () => Promise<LayoutConfig>
+      setLayoutConfig: (config: Partial<LayoutConfig>) => Promise<void>
     }
   }
 }
+
+export {}
