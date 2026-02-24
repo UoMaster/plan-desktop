@@ -13,10 +13,7 @@ import {
   NMenu,
   NIcon,
   NDropdown,
-  NTabs,
-  NTabPane,
   NSwitch,
-  useMessage,
   NEmpty
 } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
@@ -35,7 +32,6 @@ import { useTaskStore } from '@/stores/taskStore'
 import type { Task } from '@/types/task'
 
 const taskStore = useTaskStore()
-const activeTab = ref('overview')
 
 interface WorkspaceInfo {
   name: string
@@ -130,7 +126,6 @@ const workspaceInfo = computed<WorkspaceInfo | null>(() => {
   return null
 })
 
-const message = useMessage()
 const activeMenuKey = ref('dashboard')
 
 // 菜单配置
@@ -141,6 +136,11 @@ const menuOptions: MenuOption[] = [
     icon: () => h(NIcon, null, { default: () => h(LayoutDashboard) })
   },
   {
+    label: '文件',
+    key: 'files',
+    icon: () => h(NIcon, null, { default: () => h(FolderOpen) })
+  },
+  {
     label: '任务',
     key: 'tasks',
     icon: () => h(NIcon, null, { default: () => h(List) })
@@ -149,7 +149,6 @@ const menuOptions: MenuOption[] = [
 
 function handleMenuUpdate(key: string) {
   activeMenuKey.value = key
-  message.info(`切换到: ${menuOptions.find(item => item.key === key)?.label}`)
 }
 
 // 下拉菜单选项
@@ -278,120 +277,91 @@ function handleGeneratePlan() {
         :style="contentBodyStyle"
       >
         <div class="content-inner">
-            <NTabs v-model:value="activeTab" type="line" animated>
-              <!-- 概览标签页 -->
-              <NTabPane name="overview" tab="概览">
-                <template #tab>
-                  <span class="tab-label">
-                    <LayoutDashboard :size="16" />
-                    概览
-                  </span>
-                </template>
+          <!-- 概览页面 -->
+          <div v-if="activeMenuKey === 'dashboard'" class="overview-content">
+            <NCard class="welcome-card" :bordered="false">
+              <div class="welcome-content">
+                <h1 class="welcome-title">
+                  欢迎回来，{{ workspaceInfo?.name }}
+                </h1>
+                <p class="welcome-subtitle">
+                  {{ workspaceInfo?.path }}
+                </p>
+              </div>
+            </NCard>
 
-                <div class="overview-content">
-                  <!-- 欢迎卡片 -->
-                  <NCard class="welcome-card" :bordered="false">
-                    <div class="welcome-content">
-                      <h1 class="welcome-title">
-                        欢迎回来，{{ workspaceInfo?.name }}
-                      </h1>
-                      <p class="welcome-subtitle">
-                        {{ workspaceInfo?.path }}
-                      </p>
-                    </div>
-                  </NCard>
-
-                  <!-- 统计卡片 -->
-                  <div class="section">
-                    <h2 class="section-title">概览</h2>
-                    <div class="stats-grid">
-                      <NCard class="stat-card" :bordered="false">
-                        <div class="stat-header">
-                          <span class="stat-label">待办任务</span>
-                          <NTag type="warning" size="small">进行中</NTag>
-                        </div>
-                        <div class="stat-value">12</div>
-                        <div class="stat-change">较上周 +3</div>
-                      </NCard>
-
-                      <NCard class="stat-card" :bordered="false">
-                        <div class="stat-header">
-                          <span class="stat-label">已完成</span>
-                          <NTag type="success" size="small">本周</NTag>
-                        </div>
-                        <div class="stat-value">28</div>
-                        <div class="stat-change text-success">较上周 +8</div>
-                      </NCard>
-
-                      <NCard class="stat-card" :bordered="false">
-                        <div class="stat-header">
-                          <span class="stat-label">文档</span>
-                          <NTag type="info" size="small">总计</NTag>
-                        </div>
-                        <div class="stat-value">45</div>
-                        <div class="stat-change">本周新增 5</div>
-                      </NCard>
-
-                      <NCard class="stat-card" :bordered="false">
-                        <div class="stat-header">
-                          <span class="stat-label">项目</span>
-                          <NTag type="default" size="small">活跃</NTag>
-                        </div>
-                        <div class="stat-value">6</div>
-                        <div class="stat-change">2 个即将截止</div>
-                      </NCard>
-                    </div>
+            <div class="section">
+              <h2 class="section-title">概览</h2>
+              <div class="stats-grid">
+                <NCard class="stat-card" :bordered="false">
+                  <div class="stat-header">
+                    <span class="stat-label">待办任务</span>
+                    <NTag type="warning" size="small">进行中</NTag>
                   </div>
-                </div>
-              </NTabPane>
-
-              <!-- 文件标签页 -->
-              <NTabPane name="files" tab="文件">
-                <template #tab>
-                  <span class="tab-label">
-                    <FolderOpen :size="16" />
-                    文件
-                  </span>
-                </template>
-
-                <NCard title="工作目录文件结构" class="files-card">
-                  <FileTree v-if="workspaceInfo?.path" :path="workspaceInfo.path" />
+                  <div class="stat-value">12</div>
+                  <div class="stat-change">较上周 +3</div>
                 </NCard>
-              </NTabPane>
 
-              <!-- 任务标签页 -->
-              <NTabPane name="tasks" tab="任务">
-                <template #tab>
-                  <span class="tab-label">
-                    <List :size="16" />
-                    任务
-                  </span>
-                </template>
-
-                <div class="tasks-container">
-                  <TaskSidebar
-                    :tasks="taskStore.tasks.value"
-                    v-model="taskStore.currentTaskId.value"
-                    @add-task="handleAddTask"
-                  />
-                  <div class="task-content">
-                    <TaskDetail
-                      v-if="taskStore.currentTask.value"
-                      :task="taskStore.currentTask.value"
-                      @update="handleTaskUpdate"
-                      @run="handleRunTask"
-                      @stop="handleStopTask"
-                      @generate-brainstorming="handleGenerateBrainstorming"
-                      @generate-plan="handleGeneratePlan"
-                    />
-                    <div v-else class="empty-state">
-                      <n-empty description="选择一个任务开始" />
-                    </div>
+                <NCard class="stat-card" :bordered="false">
+                  <div class="stat-header">
+                    <span class="stat-label">已完成</span>
+                    <NTag type="success" size="small">本周</NTag>
                   </div>
-                </div>
-              </NTabPane>
-            </NTabs>
+                  <div class="stat-value">28</div>
+                  <div class="stat-change text-success">较上周 +8</div>
+                </NCard>
+
+                <NCard class="stat-card" :bordered="false">
+                  <div class="stat-header">
+                    <span class="stat-label">文档</span>
+                    <NTag type="info" size="small">总计</NTag>
+                  </div>
+                  <div class="stat-value">45</div>
+                  <div class="stat-change">本周新增 5</div>
+                </NCard>
+
+                <NCard class="stat-card" :bordered="false">
+                  <div class="stat-header">
+                    <span class="stat-label">项目</span>
+                    <NTag type="default" size="small">活跃</NTag>
+                  </div>
+                  <div class="stat-value">6</div>
+                  <div class="stat-change">2 个即将截止</div>
+                </NCard>
+              </div>
+            </div>
           </div>
+
+          <!-- 文件页面 -->
+          <div v-else-if="activeMenuKey === 'files'" class="files-content">
+            <NCard title="工作目录文件结构" class="files-card">
+              <FileTree v-if="workspaceInfo?.path" :path="workspaceInfo.path" />
+            </NCard>
+          </div>
+
+          <!-- 任务页面 -->
+          <div v-else-if="activeMenuKey === 'tasks'" class="tasks-container">
+            <TaskSidebar
+              :tasks="taskStore.tasks.value"
+              v-model="taskStore.currentTaskId.value"
+              @add-task="handleAddTask"
+            />
+            <div class="task-content">
+              <TaskDetail
+                v-if="taskStore.currentTask.value"
+                :task="taskStore.currentTask.value"
+                @update="handleTaskUpdate"
+                @run="handleRunTask"
+                @stop="handleStopTask"
+                @generate-brainstorming="handleGenerateBrainstorming"
+                @generate-plan="handleGeneratePlan"
+              />
+              <div v-else class="empty-state">
+                <n-empty description="选择一个任务开始" />
+              </div>
+            </div>
+          </div>
+        </div>
         </NLayoutContent>
       </NLayout>
 
