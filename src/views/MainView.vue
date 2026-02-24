@@ -357,7 +357,8 @@ async function handleDropdownSelect(key: string) {
 }
 
 .content-fluid {
-  width: 100%;
+  max-width: 100%;
+  margin: 0;
   padding: var(--space-5);
 }
 
