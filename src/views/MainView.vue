@@ -1,0 +1,507 @@
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import {
+  NButton,
+  NCard,
+  NSpace,
+  NTag,
+  NLayout,
+  NLayoutSider,
+  NLayoutHeader,
+  NLayoutContent,
+  NMenu,
+  NIcon,
+  NDropdown,
+  NTabs,
+  NTabPane,
+  useMessage
+} from 'naive-ui'
+import type { MenuOption } from 'naive-ui'
+import {
+  FolderOpen,
+  LayoutDashboard,
+  Clock,
+  MoreHorizontal
+} from 'lucide-vue-next'
+import { h } from 'vue'
+import FileTree from '@/components/FileTree.vue'
+
+const activeTab = ref('overview')
+
+interface WorkspaceInfo {
+  name: string
+  path: string
+}
+
+const route = useRoute()
+
+// 从路由 query 参数获取工作区信息
+const workspaceInfo = computed<WorkspaceInfo | null>(() => {
+  const name = route.query.workspaceName as string
+  const path = route.query.workspacePath as string
+  if (name && path) {
+    return { name, path }
+  }
+  return null
+})
+
+const message = useMessage()
+const collapsed = ref(false)
+const activeMenuKey = ref('dashboard')
+
+// 菜单配置
+const menuOptions: MenuOption[] = [
+  {
+    label: '概览',
+    key: 'dashboard',
+    icon: () => h(NIcon, null, { default: () => h(LayoutDashboard) })
+  }
+]
+
+function handleMenuUpdate(key: string) {
+  activeMenuKey.value = key
+  message.info(`切换到: ${menuOptions.find(item => item.key === key)?.label}`)
+}
+
+// 下拉菜单选项
+const dropdownOptions = [
+  {
+    label: '退出当前工作目录',
+    key: 'exit-workspace'
+  }
+]
+
+// 处理下拉菜单选择
+async function handleDropdownSelect(key: string) {
+  if (key === 'exit-workspace') {
+    await window.electronAPI.exitToSetup()
+  }
+}
+</script>
+
+<template>
+  <div class="main-wrapper">
+    <NLayout has-sider class="main-layout">
+      <!-- 侧边栏 -->
+      <NLayoutSider
+        bordered
+        collapse-mode="width"
+        :collapsed-width="64"
+        :width="200"
+        :collapsed="collapsed"
+        :native-scrollbar="false"
+        class="sidebar"
+        @collapse="collapsed = true"
+        @expand="collapsed = false"
+      >
+        <!-- Logo/工作区名称 -->
+        <div class="sidebar-header">
+          <div class="workspace-icon">
+            <FolderOpen :size="20" />
+          </div>
+          <span v-if="!collapsed" class="workspace-name">
+            {{ workspaceInfo?.name || '工作区' }}
+          </span>
+        </div>
+
+        <!-- 导航菜单 -->
+        <NMenu
+          :collapsed="collapsed"
+          :collapsed-width="64"
+          :collapsed-icon-size="22"
+          :options="menuOptions"
+          :value="activeMenuKey"
+          @update:value="handleMenuUpdate"
+          class="sidebar-menu"
+        />
+      </NLayoutSider>
+
+      <!-- 主内容区 -->
+      <NLayout class="content-layout">
+        <!-- 顶部栏 -->
+        <NLayoutHeader bordered class="content-header">
+          <NSpace align="center" justify="space-between" class="header-inner">
+            <NSpace align="center">
+              <NTag size="small" type="success">
+                <template #icon>
+                  <NIcon><Clock /></NIcon>
+                </template>
+                运行中
+              </NTag>
+            </NSpace>
+            <NDropdown :options="dropdownOptions" @select="handleDropdownSelect">
+              <NButton quaternary circle>
+                <template #icon>
+                  <NIcon><MoreHorizontal /></NIcon>
+                </template>
+              </NButton>
+            </NDropdown>
+          </NSpace>
+        </NLayoutHeader>
+
+        <!-- 内容区 -->
+        <NLayoutContent class="content-body">
+          <div class="content-inner">
+            <NTabs v-model:value="activeTab" type="line" animated>
+              <!-- 概览标签页 -->
+              <NTabPane name="overview" tab="概览">
+                <template #tab>
+                  <span class="tab-label">
+                    <LayoutDashboard :size="16" />
+                    概览
+                  </span>
+                </template>
+
+                <div class="overview-content">
+                  <!-- 欢迎卡片 -->
+                  <NCard class="welcome-card" :bordered="false">
+                    <div class="welcome-content">
+                      <h1 class="welcome-title">
+                        欢迎回来，{{ workspaceInfo?.name }}
+                      </h1>
+                      <p class="welcome-subtitle">
+                        {{ workspaceInfo?.path }}
+                      </p>
+                    </div>
+                  </NCard>
+
+                  <!-- 统计卡片 -->
+                  <div class="section">
+                    <h2 class="section-title">概览</h2>
+                    <div class="stats-grid">
+                      <NCard class="stat-card" :bordered="false">
+                        <div class="stat-header">
+                          <span class="stat-label">待办任务</span>
+                          <NTag type="warning" size="small">进行中</NTag>
+                        </div>
+                        <div class="stat-value">12</div>
+                        <div class="stat-change">较上周 +3</div>
+                      </NCard>
+
+                      <NCard class="stat-card" :bordered="false">
+                        <div class="stat-header">
+                          <span class="stat-label">已完成</span>
+                          <NTag type="success" size="small">本周</NTag>
+                        </div>
+                        <div class="stat-value">28</div>
+                        <div class="stat-change text-success">较上周 +8</div>
+                      </NCard>
+
+                      <NCard class="stat-card" :bordered="false">
+                        <div class="stat-header">
+                          <span class="stat-label">文档</span>
+                          <NTag type="info" size="small">总计</NTag>
+                        </div>
+                        <div class="stat-value">45</div>
+                        <div class="stat-change">本周新增 5</div>
+                      </NCard>
+
+                      <NCard class="stat-card" :bordered="false">
+                        <div class="stat-header">
+                          <span class="stat-label">项目</span>
+                          <NTag type="default" size="small">活跃</NTag>
+                        </div>
+                        <div class="stat-value">6</div>
+                        <div class="stat-change">2 个即将截止</div>
+                      </NCard>
+                    </div>
+                  </div>
+                </div>
+              </NTabPane>
+
+              <!-- 文件标签页 -->
+              <NTabPane name="files" tab="文件">
+                <template #tab>
+                  <span class="tab-label">
+                    <FolderOpen :size="16" />
+                    文件
+                  </span>
+                </template>
+
+                <NCard title="工作目录文件结构" class="files-card">
+                  <FileTree v-if="workspaceInfo?.path" :path="workspaceInfo.path" />
+                </NCard>
+              </NTabPane>
+            </NTabs>
+          </div>
+        </NLayoutContent>
+      </NLayout>
+    </NLayout>
+  </div>
+</template>
+
+<style scoped>
+.main-wrapper {
+  height: 100vh;
+  background-color: var(--color-bg-base);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.main-layout {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+  background-color: var(--color-bg-elevated) !important;
+  border-right: 1px solid var(--color-border) !important;
+}
+
+.sidebar-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-4);
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.workspace-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-base);
+  background-color: var(--color-accent-muted);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.workspace-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-menu {
+  padding-top: var(--space-2);
+  background-color: transparent !important;
+  --n-item-color-hover: var(--color-bg-overlay) !important;
+  --n-item-color-active: var(--color-accent-muted) !important;
+  --n-item-text-color: var(--color-text-muted) !important;
+  --n-item-text-color-hover: var(--color-text-base) !important;
+  --n-item-text-color-active: var(--color-accent) !important;
+  --n-item-icon-color: var(--color-text-muted) !important;
+  --n-item-icon-color-hover: var(--color-text-base) !important;
+  --n-item-icon-color-active: var(--color-accent) !important;
+}
+
+/* 内容区样式 */
+.content-layout {
+  background-color: var(--color-bg-base);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.content-header {
+  height: 64px;
+  padding: 0 var(--space-5);
+  background-color: var(--color-bg-elevated) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  display: flex;
+  align-items: center;
+}
+
+.header-inner {
+  width: 100%;
+}
+
+.content-body {
+  padding: var(--space-5);
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.content-inner {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* 欢迎卡片 */
+.welcome-card {
+  background: linear-gradient(135deg, var(--color-accent-muted) 0%, var(--color-bg-elevated) 100%);
+  border: 1px solid var(--color-border);
+  margin-bottom: var(--space-6);
+}
+
+.welcome-content {
+  padding: var(--space-4) 0;
+}
+
+.welcome-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text-base);
+  margin: 0 0 var(--space-2) 0;
+  letter-spacing: -0.02em;
+}
+
+.welcome-subtitle {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0;
+  font-family: var(--font-mono);
+}
+
+/* 区块标题 */
+.section {
+  margin-bottom: var(--space-6);
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-base);
+  margin: 0 0 var(--space-4) 0;
+}
+
+/* 快捷操作 */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-4);
+}
+
+.action-card {
+  cursor: pointer;
+  background-color: var(--color-bg-elevated) !important;
+  border: 1px solid var(--color-border) !important;
+  transition: border-color var(--transition-fast);
+}
+
+.action-card:hover {
+  border-color: var(--color-border-light) !important;
+}
+
+.action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-overlay);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--space-2);
+}
+
+.action-label {
+  font-size: 14px;
+  color: var(--color-text-base);
+  font-weight: 500;
+}
+
+/* 统计网格 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.stat-card {
+  background-color: var(--color-bg-elevated) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.stat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--color-text-base);
+  line-height: 1.2;
+  margin-bottom: var(--space-1);
+}
+
+.stat-change {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.stat-change.text-success {
+  color: var(--color-success);
+}
+
+/* 标签页样式 */
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.overview-content {
+  padding-top: 8px;
+}
+
+.files-card {
+  margin-top: 8px;
+}
+
+.files-card :deep(.n-card-header) {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* 响应式 */
+
+/* 小屏幕 (< 768px) */
+@media (max-width: 768px) {
+  .content-body {
+    padding: var(--space-4);
+  }
+
+  .content-inner {
+    max-width: 100%;
+  }
+
+  .welcome-title {
+    font-size: 22px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 中等屏幕 (768px - 1199px) */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .content-inner {
+    max-width: 100%;
+  }
+}
+
+/* 大屏幕 (1200px - 1599px) */
+@media (min-width: 1200px) and (max-width: 1599px) {
+  .content-inner {
+    max-width: 1200px;
+  }
+}
+
+/* 超大屏幕 (>= 1600px) */
+@media (min-width: 1600px) {
+  .content-inner {
+    max-width: 1400px;
+  }
+}
+</style>
