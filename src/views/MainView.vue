@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { h } from 'vue'
 import {
   NButton,
   NCard,
   NSpace,
   NTag,
   NLayout,
-  NLayoutSider,
   NLayoutHeader,
   NLayoutContent,
   NMenu,
@@ -15,6 +15,8 @@ import {
   NDropdown,
   NTabs,
   NTabPane,
+  NSwitch,
+  NTooltip,
   useMessage
 } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
@@ -22,7 +24,9 @@ import {
   FolderOpen,
   LayoutDashboard,
   Clock,
-  MoreHorizontal
+  MoreHorizontal,
+  Settings,
+  Maximize2
 } from 'lucide-vue-next'
 import { h } from 'vue'
 import FileTree from '@/components/FileTree.vue'
@@ -32,6 +36,32 @@ const activeTab = ref('overview')
 interface WorkspaceInfo {
   name: string
   path: string
+}
+
+// 布局配置
+const useFixedWidth = ref(true)
+const isLoadingConfig = ref(true)
+
+// 页面加载时读取配置
+onMounted(async () => {
+  try {
+    const config = await window.electronAPI.getLayoutConfig()
+    useFixedWidth.value = config.useFixedWidth
+  } catch (error) {
+    console.error('读取布局配置失败:', error)
+  } finally {
+    isLoadingConfig.value = false
+  }
+})
+
+// 切换版心设置
+async function toggleFixedWidth(value: boolean) {
+  useFixedWidth.value = value
+  try {
+    await window.electronAPI.setLayoutConfig({ useFixedWidth: value })
+  } catch (error) {
+    console.error('保存布局配置失败:', error)
+  }
 }
 
 const route = useRoute()
