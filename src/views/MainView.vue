@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, h } from 'vue'
 import { useRoute } from 'vue-router'
+import anime from 'animejs'
 import {
   NButton,
   NCard,
@@ -36,6 +37,7 @@ interface WorkspaceInfo {
 // 布局配置
 const useFixedWidth = ref(true)
 const isLoadingConfig = ref(true)
+const contentBodyRef = ref<HTMLElement | null>(null)
 
 // 页面加载时读取配置
 onMounted(async () => {
@@ -51,7 +53,47 @@ onMounted(async () => {
 
 // 切换版心设置
 async function toggleFixedWidth(value: boolean) {
-  useFixedWidth.value = value
+  const el = contentBodyRef.value
+  if (!el) {
+    useFixedWidth.value = value
+    await window.electronAPI.setLayoutConfig({ useFixedWidth: value })
+    return
+  }
+
+  // 获取当前计算样式
+  const computedStyle = window.getComputedStyle(el)
+  const currentMaxWidth = parseInt(computedStyle.maxWidth) || el.clientWidth
+  const currentPadding = parseInt(computedStyle.paddingLeft) || 24
+
+  // 目标值
+  const targetMaxWidth = value ? 1280 : el.parentElement?.clientWidth || window.innerWidth
+  const targetPadding = 24 // var(--space-5) = 24px
+
+  // 先设置初始值
+  el.style.maxWidth = currentMaxWidth + 'px'
+  el.style.margin = value ? '0' : '0 auto'
+  el.style.paddingLeft = currentPadding + 'px'
+  el.style.paddingRight = currentPadding + 'px'
+
+  // 使用 Anime.js 动画
+  anime({
+    targets: el,
+    maxWidth: targetMaxWidth,
+    paddingLeft: targetPadding,
+    paddingRight: targetPadding,
+    duration: 400,
+    easing: 'cubicBezier(0.4, 0.0, 0.2, 1)',
+    complete: () => {
+      // 动画完成后更新状态，让 CSS 类接管
+      useFixedWidth.value = value
+      // 清除内联样式
+      el.style.maxWidth = ''
+      el.style.margin = ''
+      el.style.paddingLeft = ''
+      el.style.paddingRight = ''
+    }
+  })
+
   try {
     await window.electronAPI.setLayoutConfig({ useFixedWidth: value })
   } catch (error) {
@@ -180,6 +222,7 @@ async function handleDropdownSelect(key: string) {
 
       <!-- 内容区域 -->
       <NLayoutContent
+        ref="contentBodyRef"
         :class="['content-body', useFixedWidth ? 'content-fixed-width' : 'content-fluid']"
       >
         <div class="content-inner">
@@ -347,7 +390,6 @@ async function handleDropdownSelect(key: string) {
   flex: 1;
   overflow: auto;
   min-height: 0;
-  transition: max-width 0.3s ease, padding 0.3s ease;
 }
 
 .content-fixed-width {
