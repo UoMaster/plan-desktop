@@ -77,7 +77,6 @@ const workspaceInfo = computed<WorkspaceInfo | null>(() => {
 })
 
 const message = useMessage()
-const collapsed = ref(false)
 const activeMenuKey = ref('dashboard')
 
 // 菜单配置
@@ -95,12 +94,35 @@ function handleMenuUpdate(key: string) {
 }
 
 // 下拉菜单选项
-const dropdownOptions = [
+const dropdownOptions = computed(() => [
+  {
+    key: 'toggle-fixed-width',
+    type: 'render',
+    render: () => h(
+      'div',
+      {
+        style: 'display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; cursor: default;',
+        onClick: (e: Event) => e.stopPropagation()
+      },
+      [
+        h('span', { style: 'margin-right: 16px;' }, '按版心显示'),
+        h(NSwitch, {
+          value: useFixedWidth.value,
+          onUpdateValue: toggleFixedWidth,
+          size: 'small'
+        })
+      ]
+    )
+  },
+  {
+    key: 'divider',
+    type: 'divider'
+  },
   {
     label: '退出当前工作目录',
     key: 'exit-workspace'
   }
-]
+])
 
 // 处理下拉菜单选择
 async function handleDropdownSelect(key: string) {
@@ -112,67 +134,60 @@ async function handleDropdownSelect(key: string) {
 
 <template>
   <div class="main-wrapper">
-    <NLayout has-sider class="main-layout">
-      <!-- 侧边栏 -->
-      <NLayoutSider
-        bordered
-        collapse-mode="width"
-        :collapsed-width="64"
-        :width="200"
-        :collapsed="collapsed"
-        :native-scrollbar="false"
-        class="sidebar"
-        @collapse="collapsed = true"
-        @expand="collapsed = false"
-      >
-        <!-- Logo/工作区名称 -->
-        <div class="sidebar-header">
-          <div class="workspace-icon">
-            <FolderOpen :size="20" />
+    <NLayout class="main-layout">
+      <!-- 顶部导航栏 -->
+      <NLayoutHeader bordered class="top-header">
+        <div class="header-left">
+          <!-- Logo/工作区名称 -->
+          <div class="header-brand">
+            <div class="workspace-icon">
+              <FolderOpen :size="20" />
+            </div>
+            <span class="workspace-name">
+              {{ workspaceInfo?.name || '工作区' }}
+            </span>
           </div>
-          <span v-if="!collapsed" class="workspace-name">
-            {{ workspaceInfo?.name || '工作区' }}
-          </span>
+
+          <!-- 水平导航菜单 -->
+          <NMenu
+            mode="horizontal"
+            :options="menuOptions"
+            :value="activeMenuKey"
+            @update:value="handleMenuUpdate"
+            class="header-menu"
+          />
         </div>
 
-        <!-- 导航菜单 -->
-        <NMenu
-          :collapsed="collapsed"
-          :collapsed-width="64"
-          :collapsed-icon-size="22"
-          :options="menuOptions"
-          :value="activeMenuKey"
-          @update:value="handleMenuUpdate"
-          class="sidebar-menu"
-        />
-      </NLayoutSider>
+        <div class="header-right">
+          <NSpace align="center">
+            <NTag size="small" type="success">
+              <template #icon>
+                <NIcon><Clock /></NIcon>
+              </template>
+              运行中
+            </NTag>
 
-      <!-- 主内容区 -->
-      <NLayout class="content-layout">
-        <!-- 顶部栏 -->
-        <NLayoutHeader bordered class="content-header">
-          <NSpace align="center" justify="space-between" class="header-inner">
-            <NSpace align="center">
-              <NTag size="small" type="success">
-                <template #icon>
-                  <NIcon><Clock /></NIcon>
-                </template>
-                运行中
-              </NTag>
-            </NSpace>
-            <NDropdown :options="dropdownOptions" @select="handleDropdownSelect">
+            <!-- 设置下拉菜单 -->
+            <NDropdown
+              :options="dropdownOptions"
+              @select="handleDropdownSelect"
+              placement="bottom-end"
+            >
               <NButton quaternary circle>
                 <template #icon>
-                  <NIcon><MoreHorizontal /></NIcon>
+                  <NIcon><Settings /></NIcon>
                 </template>
               </NButton>
             </NDropdown>
           </NSpace>
-        </NLayoutHeader>
+        </div>
+      </NLayoutHeader>
 
-        <!-- 内容区 -->
-        <NLayoutContent class="content-body">
-          <div class="content-inner">
+      <!-- 内容区域 -->
+      <NLayoutContent
+        :class="['content-body', useFixedWidth ? 'content-fixed-width' : 'content-fluid']"
+      >
+        <div class="content-inner">
             <NTabs v-model:value="activeTab" type="line" animated>
               <!-- 概览标签页 -->
               <NTabPane name="overview" tab="概览">
@@ -257,9 +272,8 @@ async function handleDropdownSelect(key: string) {
           </div>
         </NLayoutContent>
       </NLayout>
-    </NLayout>
-  </div>
-</template>
+    </div>
+  </template>
 
 <style scoped>
 .main-wrapper {
