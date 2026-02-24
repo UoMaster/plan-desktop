@@ -3,7 +3,42 @@ import { join, dirname, basename } from 'path'
 import { fileURLToPath } from 'url'
 import { mkdirSync } from 'fs'
 import { readdir, stat } from 'fs/promises'
+import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
 import Store from 'electron-store'
+
+// Task 类型定义
+interface TaskDocument {
+  brainstorming?: string
+  plan?: string
+}
+
+interface TaskLogs {
+  startTime?: string
+  endTime?: string
+  result?: 'success' | 'failed'
+}
+
+interface Task {
+  id: string
+  name: string
+  description: string
+  status: string
+  workspaceDir: string
+  documents: TaskDocument
+  sessionId?: string
+  logs: TaskLogs
+  createdAt: string
+  updatedAt: string
+}
+
+// Task Runner 类型
+interface TaskProcess {
+  taskId: string
+  proc: ChildProcessWithoutNullStreams | null
+}
+
+// 存储运行中的任务
+const runningTasks = new Map<string, TaskProcess>()
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -288,6 +323,171 @@ function setupIPC() {
   ipcMain.handle('set-layout-config', (_, config: Partial<LayoutConfig>) => {
     const current = store.get('layoutConfig')
     store.set('layoutConfig', { ...current, ...config })
+  })
+
+  // ===== Task Runner IPC 处理 =====
+
+  // IPC: 启动脑暴
+  ipcMain.handle('task:brainstorming', async (event, task: Task) => {
+    const prompt = task.description || task.name
+
+    const proc = spawn('claude', [
+      '-p',
+      `使用 /bmad-brainstorming skill，主题是：${prompt}`
+    ], {
+      cwd: task.workspaceDir,
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+
+    const taskProc: TaskProcess = {
+      taskId: task.id,
+      proc
+    }
+    runningTasks.set(task.id, taskProc)
+
+    return new Promise((resolve, reject) => {
+      let output = ''
+
+      proc.stdout?.on('data', (data) => {
+        output += data.toString()
+        mainWindow?.webContents.send('task:output', { taskId: task.id, data: data.toString() })
+      })
+
+      proc.stderr?.on('data', (data) => {
+        output += data.toString()
+        mainWindow?.webContents.send('task:output', { taskId: task.id, data: data.toString() })
+      })
+
+      proc.on('close', (code) => {
+        runningTasks.delete(task.id)
+        if (code === 0) {
+          resolve({ success: true, output })
+        } else {
+          reject(new Error(`脑暴失败，退出码: ${code}`))
+        }
+      })
+
+      proc.on('error', (err) => {
+        runningTasks.delete(task.id)
+        reject(err)
+      })
+    })
+  })
+
+  // IPC: 启动设计
+  ipcMain.handle('task:planning', async (event, task: Task) => {
+    const brainstormingContent = task.documents.brainstorming || task.description
+
+    const proc = spawn('claude', [
+      '-p',
+      `使用 /bmad-writing-plans skill，基于以下需求生成设计文档：\n\n${brainstormingContent}`
+    ], {
+      cwd: task.workspaceDir,
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+
+    const taskProc: TaskProcess = {
+      taskId: task.id,
+      proc
+    }
+    runningTasks.set(task.id, taskProc)
+
+    return new Promise((resolve, reject) => {
+      let output = ''
+
+      proc.stdout?.on('data', (data) => {
+        output += data.toString()
+        mainWindow?.webContents.send('task:output', { taskId: task.id, data: data.toString() })
+      })
+
+      proc.stderr?.on('data', (data) => {
+        output += data.toString()
+        mainWindow?.webContents.send('task:output', { taskId: task.id, data: data.toString() })
+      })
+
+      proc.on('close', (code) => {
+        runningTasks.delete(task.id)
+        if (code === 0) {
+          resolve({ success: true, output })
+        } else {
+          reject(new Error(`设计失败，退出码: ${code}`))
+        }
+      })
+
+      proc.on('error', (err) => {
+        runningTasks.delete(task.id)
+        reject(err)
+      })
+    })
+  })
+
+  // IPC: 启动执行
+  ipcMain.handle('task:execute', async (event, task: Task) => {
+    const planContent = task.documents.plan || task.description
+
+    const proc = spawn('claude', [
+      '-p',
+      `使用 /bmad-executing-plans skill，执行以下计划：\n\n${planContent}`
+    ], {
+      cwd: task.workspaceDir,
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+
+    const taskProc: TaskProcess = {
+      taskId: task.id,
+      proc
+    }
+    runningTasks.set(task.id, taskProc)
+
+    return new Promise((resolve, reject) => {
+      proc.stdout?.on('data', (data) => {
+        mainWindow?.webContents.send('task:output', { taskId: task.id, data: data.toString() })
+      })
+
+      proc.stderr?.on('data', (data) => {
+        mainWindow?.webContents.send('task:output', { taskId: task.id, data: data.toString() })
+      })
+
+      proc.on('close', (code) => {
+        runningTasks.delete(task.id)
+        if (code === 0) {
+          resolve({ success: true })
+        } else {
+          reject(new Error(`执行失败，退出码: ${code}`))
+        }
+      })
+
+      proc.on('error', (err) => {
+        runningTasks.delete(task.id)
+        reject(err)
+      })
+    })
+  })
+
+  // IPC: 停止任务
+  ipcMain.handle('task:stop', async (_, taskId: string) => {
+    const taskProc = runningTasks.get(taskId)
+    if (taskProc?.proc) {
+      taskProc.proc.kill()
+      runningTasks.delete(taskId)
+      return { success: true }
+    }
+    return { success: false, error: '任务未运行' }
+  })
+
+  // IPC: 发送输入
+  ipcMain.handle('task:input', async (_, taskId: string, input: string) => {
+    const taskProc = runningTasks.get(taskId)
+    if (taskProc?.proc?.stdin) {
+      taskProc.proc.stdin.write(input + '\n')
+      return { success: true }
+    }
+    return { success: false, error: '任务未运行' }
+  })
+
+  // IPC: 检查任务是否运行中
+  ipcMain.handle('task:is-running', (_, taskId: string) => {
+    return runningTasks.has(taskId)
   })
 }
 

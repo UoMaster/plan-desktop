@@ -78,7 +78,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLayoutConfig: (): Promise<LayoutConfig> =>
     ipcRenderer.invoke('get-layout-config'),
   setLayoutConfig: (config: Partial<LayoutConfig>): Promise<void> =>
-    ipcRenderer.invoke('set-layout-config', config)
+    ipcRenderer.invoke('set-layout-config', config),
+
+  // Task Runner API
+  taskAPI: {
+    brainstorming: (task: unknown) => ipcRenderer.invoke('task:brainstorming', task),
+    planning: (task: unknown) => ipcRenderer.invoke('task:planning', task),
+    execute: (task: unknown) => ipcRenderer.invoke('task:execute', task),
+    stop: (taskId: string) => ipcRenderer.invoke('task:stop', taskId),
+    sendInput: (taskId: string, input: string) => ipcRenderer.invoke('task:input', taskId, input),
+    isRunning: (taskId: string) => ipcRenderer.invoke('task:is-running', taskId),
+    onOutput: (callback: (data: { taskId: string; data: string }) => void) => {
+      ipcRenderer.on('task:output', (_event: unknown, data: { taskId: string; data: string }) => callback(data))
+    }
+  }
 })
 
 declare global {
@@ -97,6 +110,17 @@ declare global {
       // 布局配置
       getLayoutConfig: () => Promise<LayoutConfig>
       setLayoutConfig: (config: Partial<LayoutConfig>) => Promise<void>
+
+      // Task Runner API
+      taskAPI: {
+        brainstorming: (task: unknown) => Promise<{ success: boolean; output?: string }>
+        planning: (task: unknown) => Promise<{ success: boolean; output?: string }>
+        execute: (task: unknown) => Promise<{ success: boolean }>
+        stop: (taskId: string) => Promise<{ success: boolean; error?: string }>
+        sendInput: (taskId: string, input: string) => Promise<{ success: boolean; error?: string }>
+        isRunning: (taskId: string) => Promise<boolean>
+        onOutput: (callback: (data: { taskId: string; data: string }) => void) => void
+      }
     }
   }
 }
