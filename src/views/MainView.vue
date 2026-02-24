@@ -445,7 +445,7 @@ function handleGeneratePlan() {
 /* 内容区域 */
 .content-body {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -611,7 +611,7 @@ function handleGeneratePlan() {
   display: flex;
   flex: 1;
   min-height: 0;
-  height: 100%;
+  overflow: hidden;
 }
 
 .task-content {
