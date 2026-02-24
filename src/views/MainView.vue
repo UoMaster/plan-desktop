@@ -31,6 +31,7 @@ import {
 import FileTree from '@/components/FileTree.vue'
 import TaskSidebar from '@/components/TaskSidebar.vue'
 import TaskDetail from '@/components/TaskDetail.vue'
+import AddTaskModal from '@/components/AddTaskModal.vue'
 import { useTaskStore } from '@/stores/taskStore'
 import type { Task } from '@/types/task'
 
@@ -191,15 +192,16 @@ async function handleDropdownSelect(key: string) {
 }
 
 // 任务相关处理
-const showAddTaskModal = ref(false)
+const addTaskModalRef = ref<{ show?: boolean } | null>(null)
 
 function handleAddTask() {
-  showAddTaskModal.value = true
+  if (addTaskModalRef.value) {
+    addTaskModalRef.value.show = true
+  }
 }
 
 function handleTaskUpdate(updatedTask: Task) {
-  // 任务更新处理
-  console.log('Task updated:', updatedTask)
+  taskStore.updateTask(updatedTask.id, updatedTask)
 }
 
 function handleRunTask() {
@@ -393,6 +395,9 @@ function handleGeneratePlan() {
           </div>
         </NLayoutContent>
       </NLayout>
+
+    <!-- 添加任务弹窗 -->
+    <AddTaskModal ref="addTaskModalRef" />
     </div>
   </template>
 
