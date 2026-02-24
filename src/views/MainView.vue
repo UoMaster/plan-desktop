@@ -347,6 +347,7 @@ async function handleDropdownSelect(key: string) {
   flex: 1;
   overflow: auto;
   min-height: 0;
+  transition: max-width 0.3s ease, padding 0.3s ease;
 }
 
 .content-fixed-width {
