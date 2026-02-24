@@ -37,6 +37,11 @@ interface GetDirectoryStructureResult {
   error?: string
 }
 
+// 布局配置
+interface LayoutConfig {
+  useFixedWidth: boolean
+}
+
 declare global {
   interface Window {
     electronAPI: {
@@ -49,6 +54,10 @@ declare global {
       getDirectoryStructure: (path: string) => Promise<GetDirectoryStructureResult>
       sendMessage: (message: string) => void
       onMessage: (callback: (message: string) => void) => void
+
+      // 布局配置
+      getLayoutConfig: () => Promise<LayoutConfig>
+      setLayoutConfig: (config: Partial<LayoutConfig>) => Promise<void>
     }
   }
 }
