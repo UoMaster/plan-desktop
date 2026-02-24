@@ -37,7 +37,7 @@ interface WorkspaceInfo {
 // 布局配置
 const useFixedWidth = ref(true)
 const isLoadingConfig = ref(true)
-const contentBodyRef = ref<HTMLElement | null>(null)
+const contentBodyRef = ref<{ $el: HTMLElement } | null>(null)
 
 // 页面加载时读取配置
 onMounted(async () => {
@@ -53,7 +53,8 @@ onMounted(async () => {
 
 // 切换版心设置
 async function toggleFixedWidth(value: boolean) {
-  const el = contentBodyRef.value
+  // 获取组件的根 DOM 元素
+  const el = contentBodyRef.value?.$el as HTMLElement | undefined
   if (!el) {
     useFixedWidth.value = value
     await window.electronAPI.setLayoutConfig({ useFixedWidth: value })
