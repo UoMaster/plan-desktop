@@ -1,5 +1,6 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { Task, TaskStatus, AppSettings } from '@/types/task'
+import { loadTasks, saveTasks, loadSettings, saveSettings } from '@/services/storage'
 
 const tasks = ref<Task[]>([])
 const currentTaskId = ref<string | null>(null)
@@ -7,6 +8,26 @@ const settings = ref<AppSettings>({
   defaultWorkspace: '',
   theme: 'light'
 })
+
+// 初始化数据
+export async function initTaskStore() {
+  try {
+    tasks.value = await loadTasks()
+    settings.value = await loadSettings()
+  } catch (error) {
+    console.error('初始化任务存储失败:', error)
+  }
+}
+
+// 自动保存
+let saveTimeout: ReturnType<typeof setTimeout> | null = null
+
+function debounceSave() {
+  if (saveTimeout) clearTimeout(saveTimeout)
+  saveTimeout = setTimeout(() => {
+    saveTasks(tasks.value)
+  }, 500)
+}
 
 export function useTaskStore() {
   const currentTask = computed(() =>
@@ -44,6 +65,7 @@ export function useTaskStore() {
       updatedAt: new Date().toISOString()
     }
     tasks.value.push(task)
+    debounceSave()
     return task
   }
 
@@ -52,12 +74,25 @@ export function useTaskStore() {
     if (task) {
       task.status = status
       task.updatedAt = new Date().toISOString()
+      debounceSave()
     }
   }
 
   function deleteTask(id: string) {
     const index = tasks.value.findIndex(t => t.id === id)
-    if (index > -1) tasks.value.splice(index, 1)
+    if (index > -1) {
+      tasks.value.splice(index, 1)
+      debounceSave()
+    }
+  }
+
+  function updateTask(id: string, updates: Partial<Task>) {
+    const task = tasks.value.find(t => t.id === id)
+    if (task) {
+      Object.assign(task, updates)
+      task.updatedAt = new Date().toISOString()
+      debounceSave()
+    }
   }
 
   function setTasks(newTasks: Task[]) {
@@ -78,6 +113,7 @@ export function useTaskStore() {
     addTask,
     updateTaskStatus,
     deleteTask,
+    updateTask,
     setTasks,
     setCurrentTaskId
   }
