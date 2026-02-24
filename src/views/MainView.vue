@@ -62,49 +62,34 @@ async function toggleFixedWidth(value: boolean) {
   }
 
   // 获取当前实际宽度
-  const rect = el.getBoundingClientRect()
-  const currentWidth = rect.width
-
-  // 目标值
+  const currentWidth = el.getBoundingClientRect().width
   const parentWidth = el.parentElement?.clientWidth || window.innerWidth
 
-  // 先固定当前状态，准备动画
+  // 固定当前宽度，防止动画期间变化
   el.style.width = currentWidth + 'px'
   el.style.maxWidth = 'none'
-  el.style.margin = '0 auto'
-  el.style.flex = '0 0 auto'
 
-  // 使用 Anime.js 动画 - 动画 width 到目标值
+  // 计算目标宽度
   const targetWidth = value ? Math.min(1280, parentWidth) : parentWidth
 
+  // 使用 Anime.js 动画 width
   animate(el, {
     width: targetWidth,
     duration: 350,
     ease: 'outCubic',
     onComplete: () => {
-      // 先设置最终状态的内联样式
+      // 强制重排确保样式稳定
+      void el.offsetHeight
+
+      // 更新状态（CSS 类接管）
+      useFixedWidth.value = value
+
+      // 再次强制重排
+      void el.offsetHeight
+
+      // 清除内联样式，让 CSS 类完全控制
       el.style.width = ''
-      el.style.flex = ''
-
-      if (value) {
-        // 版心模式：设置 max-width，让 CSS 接管时无缝衔接
-        el.style.maxWidth = '1280px'
-        el.style.margin = '0 auto'
-      } else {
-        // 全宽模式
-        el.style.maxWidth = '100%'
-        el.style.margin = '0'
-      }
-
-      // 下一帧更新状态，让 CSS 类接管（此时内联样式已经和 CSS 类一致）
-      requestAnimationFrame(() => {
-        useFixedWidth.value = value
-        // 再下一帧清除内联样式
-        requestAnimationFrame(() => {
-          el.style.maxWidth = ''
-          el.style.margin = ''
-        })
-      })
+      el.style.maxWidth = ''
     }
   })
 
