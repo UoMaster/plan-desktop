@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, h } from 'vue'
 import { useRoute } from 'vue-router'
-import { h } from 'vue'
 import {
   NButton,
   NCard,
@@ -16,7 +15,6 @@ import {
   NTabs,
   NTabPane,
   NSwitch,
-  NTooltip,
   useMessage
 } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
@@ -24,11 +22,8 @@ import {
   FolderOpen,
   LayoutDashboard,
   Clock,
-  MoreHorizontal,
-  Settings,
-  Maximize2
+  Settings
 } from 'lucide-vue-next'
-import { h } from 'vue'
 import FileTree from '@/components/FileTree.vue'
 
 const activeTab = ref('overview')
@@ -289,19 +284,27 @@ async function handleDropdownSelect(key: string) {
   min-height: 0;
 }
 
-/* 侧边栏样式 */
-.sidebar {
-  background-color: var(--color-bg-elevated) !important;
-  border-right: 1px solid var(--color-border) !important;
-}
-
-.sidebar-header {
+/* 顶部导航栏 */
+.top-header {
   height: 64px;
+  background-color: var(--color-bg-elevated) !important;
+  border-bottom: 1px solid var(--color-border) !important;
   display: flex;
   align-items: center;
-  padding: 0 var(--space-4);
+  justify-content: space-between;
+  padding: 0 var(--space-5);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
   gap: var(--space-3);
-  border-bottom: 1px solid var(--color-border);
 }
 
 .workspace-icon {
@@ -325,8 +328,7 @@ async function handleDropdownSelect(key: string) {
   white-space: nowrap;
 }
 
-.sidebar-menu {
-  padding-top: var(--space-2);
+.header-menu {
   background-color: transparent !important;
   --n-item-color-hover: var(--color-bg-overlay) !important;
   --n-item-color-active: var(--color-accent-muted) !important;
@@ -336,40 +338,30 @@ async function handleDropdownSelect(key: string) {
   --n-item-icon-color: var(--color-text-muted) !important;
   --n-item-icon-color-hover: var(--color-text-base) !important;
   --n-item-icon-color-active: var(--color-accent) !important;
+  --n-item-height: 40px !important;
+  --n-item-border-radius: var(--radius-base) !important;
 }
 
-/* 内容区样式 */
-.content-layout {
-  background-color: var(--color-bg-base);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.content-header {
-  height: 64px;
-  padding: 0 var(--space-5);
-  background-color: var(--color-bg-elevated) !important;
-  border-bottom: 1px solid var(--color-border) !important;
-  display: flex;
-  align-items: center;
-}
-
-.header-inner {
-  width: 100%;
-}
-
+/* 内容区域 */
 .content-body {
-  padding: var(--space-5);
   flex: 1;
   overflow: auto;
   min-height: 0;
 }
 
+.content-fixed-width {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-5);
+}
+
+.content-fluid {
+  width: 100%;
+  padding: var(--space-5);
+}
+
 .content-inner {
   max-width: 100%;
-  margin: 0 auto;
-  padding: 0;
 }
 
 /* 欢迎卡片 */
@@ -511,12 +503,21 @@ async function handleDropdownSelect(key: string) {
 
 /* 小屏幕 (< 768px) */
 @media (max-width: 768px) {
-  .content-body {
-    padding: var(--space-4);
+  .top-header {
+    padding: 0 var(--space-3);
   }
 
-  .content-inner {
-    max-width: 100%;
+  .header-left {
+    gap: var(--space-3);
+  }
+
+  .workspace-name {
+    display: none;
+  }
+
+  .content-fixed-width,
+  .content-fluid {
+    padding: var(--space-4);
   }
 
   .welcome-title {
@@ -530,21 +531,21 @@ async function handleDropdownSelect(key: string) {
 
 /* 中等屏幕 (768px - 1199px) */
 @media (min-width: 768px) and (max-width: 1199px) {
-  .content-inner {
+  .content-fixed-width {
     max-width: 100%;
   }
 }
 
 /* 大屏幕 (1200px - 1599px) */
 @media (min-width: 1200px) and (max-width: 1599px) {
-  .content-inner {
+  .content-fixed-width {
     max-width: 1200px;
   }
 }
 
 /* 超大屏幕 (>= 1600px) */
 @media (min-width: 1600px) {
-  .content-inner {
+  .content-fixed-width {
     max-width: 1400px;
   }
 }
