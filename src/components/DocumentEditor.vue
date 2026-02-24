@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { NInput, NButton } from 'naive-ui'
-import { Sparkles } from '@vicons/ionicons5'
+import { Sparkles } from 'lucide-vue-next'
 
 const props = defineProps<{
   modelValue?: string

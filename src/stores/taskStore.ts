@@ -1,6 +1,6 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import type { Task, TaskStatus, AppSettings } from '@/types/task'
-import { loadTasks, saveTasks, loadSettings, saveSettings } from '@/services/storage'
+import { loadTasks, saveTasks } from '@/services/storage'
 
 const tasks = ref<Task[]>([])
 const currentTaskId = ref<string | null>(null)
@@ -13,7 +13,6 @@ const settings = ref<AppSettings>({
 export async function initTaskStore() {
   try {
     tasks.value = await loadTasks()
-    settings.value = await loadSettings()
   } catch (error) {
     console.error('初始化任务存储失败:', error)
   }

@@ -10,7 +10,6 @@ import {
   NLayout,
   NLayoutHeader,
   NLayoutContent,
-  NLayoutSider,
   NMenu,
   NIcon,
   NDropdown,
@@ -371,14 +370,14 @@ function handleGeneratePlan() {
 
                 <div class="tasks-container">
                   <TaskSidebar
-                    :tasks="taskStore.taskList"
-                    v-model="taskStore.currentTaskId"
+                    :tasks="taskStore.tasks.value"
+                    v-model="taskStore.currentTaskId.value"
                     @add-task="handleAddTask"
                   />
                   <div class="task-content">
                     <TaskDetail
-                      v-if="taskStore.currentTask"
-                      :task="taskStore.currentTask"
+                      v-if="taskStore.currentTask.value"
+                      :task="taskStore.currentTask.value"
                       @update="handleTaskUpdate"
                       @run="handleRunTask"
                       @stop="handleStopTask"

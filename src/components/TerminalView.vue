@@ -29,16 +29,17 @@ import { ref, computed, onMounted } from 'vue'
 import { NTabs, NTabPane, NInput, NScrollbar } from 'naive-ui'
 import { useTaskStore } from '@/stores/taskStore'
 import { useTaskRunner } from '@/composables/useTaskRunner'
+import type { Task } from '@/types/task'
 
 const taskStore = useTaskStore()
 const { sendInput: sendToTask, onOutput } = useTaskRunner()
 
-const activeTaskId = ref<string | null>(null)
+const activeTaskId = ref<string>('')
 const inputText = ref('')
 const output = ref('')
 
 const runningTasks = computed(() =>
-  taskStore.tasks.filter(t => t.status === 'running')
+  taskStore.tasks.value.filter((t: Task) => t.status === 'running')
 )
 
 onMounted(() => {

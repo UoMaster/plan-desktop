@@ -38,12 +38,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { NInput, NButton, NTag, NIcon, NScrollbar } from 'naive-ui'
-import { Search, Plus } from '@vicons/ionicons5'
+import { Search, Plus } from 'lucide-vue-next'
 import type { Task, TaskStatus } from '@/types/task'
 
 const props = defineProps<{
   tasks: Task[]
-  modelValue: string | null
+  modelValue: string | null | undefined
 }>()
 
 const emit = defineEmits<{

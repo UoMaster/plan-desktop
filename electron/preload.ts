@@ -94,35 +94,4 @@ contextBridge.exposeInMainWorld('electronAPI', {
   }
 })
 
-declare global {
-  interface Window {
-    electronAPI: {
-      selectDirectory: () => Promise<SelectDirectoryResult>
-      confirmWorkspace: (workspaceInfo: WorkspaceInfo) => Promise<ConfirmWorkspaceResult>
-      getWindowType: () => Promise<'setup' | 'main' | 'unknown'>
-      getSavedWorkspace: () => Promise<WorkspaceInfo | null>
-      clearWorkspace: () => Promise<void>
-      exitToSetup: () => Promise<void>
-      getDirectoryStructure: (path: string) => Promise<GetDirectoryStructureResult>
-      sendMessage: (message: string) => void
-      onMessage: (callback: (message: string) => void) => void
-
-      // 布局配置
-      getLayoutConfig: () => Promise<LayoutConfig>
-      setLayoutConfig: (config: Partial<LayoutConfig>) => Promise<void>
-
-      // Task Runner API
-      taskAPI: {
-        brainstorming: (task: unknown) => Promise<{ success: boolean; output?: string }>
-        planning: (task: unknown) => Promise<{ success: boolean; output?: string }>
-        execute: (task: unknown) => Promise<{ success: boolean }>
-        stop: (taskId: string) => Promise<{ success: boolean; error?: string }>
-        sendInput: (taskId: string, input: string) => Promise<{ success: boolean; error?: string }>
-        isRunning: (taskId: string) => Promise<boolean>
-        onOutput: (callback: (data: { taskId: string; data: string }) => void) => void
-      }
-    }
-  }
-}
-
 export {}

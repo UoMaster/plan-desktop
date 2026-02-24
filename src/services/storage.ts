@@ -3,22 +3,6 @@ import type { Task, AppSettings } from '@/types/task'
 const DATA_FILE = 'tasks.json'
 const SETTINGS_FILE = 'settings.json'
 
-declare global {
-  interface Window {
-    electronAPI: {
-      // 其他已存在的 API
-      getDataPath?: () => Promise<string>
-      readFile?: (filePath: string) => Promise<string>
-      writeFile?: (filePath: string, content: string) => Promise<void>
-    }
-  }
-}
-
-async function getDataPath(): Promise<string> {
-  // 使用 localStorage 作为临时方案
-  return ''
-}
-
 export async function loadTasks(): Promise<Task[]> {
   try {
     const data = localStorage.getItem(DATA_FILE)

@@ -5,11 +5,10 @@
         <n-input v-model:value="form.name" placeholder="输入任务名称" />
       </n-form-item>
       <n-form-item label="工作目录" path="workspace">
-        <n-input v-model:value="form.workspace" placeholder="选择工作目录">
-          <template #append>
-            <n-button @click="selectDir">选择</n-button>
-          </template>
-        </n-input>
+        <div style="display: flex; width: 100%;">
+          <n-input v-model:value="form.workspace" placeholder="选择工作目录" style="flex: 1;" />
+          <n-button @click="selectDir" style="margin-left: 8px;">选择</n-button>
+        </div>
       </n-form-item>
       <n-form-item label="任务描述" path="description">
         <n-input
@@ -58,7 +57,7 @@ async function selectDir() {
 }
 
 function handleSubmit() {
-  formRef.value?.validate(async (valid) => {
+  formRef.value?.validate(async (valid: boolean) => {
     if (valid) {
       taskStore.addTask(form.name, form.workspace)
       show.value = false

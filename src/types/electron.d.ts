@@ -42,6 +42,30 @@ interface LayoutConfig {
   useFixedWidth: boolean
 }
 
+// Task 类型
+interface TaskDocument {
+  brainstorming?: string
+  plan?: string
+}
+
+interface TaskLogs {
+  startTime?: string
+  endTime?: string
+  result?: 'success' | 'failed'
+}
+
+interface Task {
+  id: string
+  name: string
+  description: string
+  status: string
+  workspaceDir: string
+  documents: TaskDocument
+  sessionId?: string
+  logs: TaskLogs
+  createdAt: string
+  updatedAt: string
+}
 
 declare global {
   interface Window {
@@ -59,6 +83,17 @@ declare global {
       // 布局配置
       getLayoutConfig: () => Promise<LayoutConfig>
       setLayoutConfig: (config: Partial<LayoutConfig>) => Promise<void>
+
+      // Task Runner API
+      taskAPI: {
+        brainstorming: (task: Task) => Promise<{ success: boolean; output?: string }>
+        planning: (task: Task) => Promise<{ success: boolean; output?: string }>
+        execute: (task: Task) => Promise<{ success: boolean }>
+        stop: (taskId: string) => Promise<{ success: boolean; error?: string }>
+        sendInput: (taskId: string, input: string) => Promise<{ success: boolean; error?: string }>
+        isRunning: (taskId: string) => Promise<boolean>
+        onOutput: (callback: (data: { taskId: string; data: string }) => void) => void
+      }
     }
   }
 }
